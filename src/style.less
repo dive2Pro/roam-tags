@@ -1,5 +1,33 @@
-.extension-template {
-    h1 {
-       background-color: #184A90; 
+.roam-tags-extension {}
+
+.roam-tags-show-shortcuts {
+    opacity: 0;
+    z-index: -1;
+    position: absolute;
+    left: -1000px;
+}
+
+.roam-tags-tag-list {
+    flex: 1 1 0px;
+    color: hsl(204, 20%, 45%);
+    // padding: 8px 20px;
+    height: 0;
+    opacity: 0;
+    z-index: -1;
+    display: none;
+    position: absolute;
+    bottom: -1000px;
+
+    .tag-tree-container {
+        height: 100%;
+        overflow: auto;
+        color: hsl(204, 20%, 45%);
+    }
+
+    &.show {
+        position: static;
+        height: 100%;
+        opacity: 1;
+        z-index: 1;
     }
 }
