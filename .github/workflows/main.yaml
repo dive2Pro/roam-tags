@@ -51,7 +51,7 @@ jobs:
                 "source_url": "${{github.server_url}}/${{ github.repository }}",
                 "source_repo": "${{github.server_url}}/${{ github.repository }}.git",
                 "source_commit": "$GITHUB_SHA",
-                "stripe_account": ""
+                "stripe_account": "acct_1LLkJkQbYbNOfzpa"
               }            
           EOF
 
