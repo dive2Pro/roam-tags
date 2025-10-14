@@ -1,4 +1,4 @@
-import { Button, Menu } from "@blueprintjs/core";
+import { Button, Menu, Tooltip } from "@blueprintjs/core";
 import { useMemo, useState } from "react";
 // 最底层：一条 block 的引用
 export interface BlockRef {
@@ -92,19 +92,43 @@ export function TagedPages({
       >
         返回树形视图
       </Button>
-      <Menu className="bp3-dark">
-        {
-          Array.from(pageList.refs.entries()).map(([name, p]) => {
-            console.log({ name, p });
-            return (
-                <Menu.Item key={name} text={name} >
-                    {/* {p.map(r => {
-                        return <Menu.Item key={r.uid} text={r.string ?? r.uid} />
-                    })} */}
-                </Menu.Item>
-            );
-          })
-        }
+      <Menu
+        className="bp3-dark"
+        style={{
+          overflow: "auto",
+        }}
+      >
+        {Array.from(pageList.refs.entries()).map(([name, p]) => {
+          console.log({ name, p });
+          return p.map((r) => (
+            <Menu.Item
+              key={r.uid}
+              text={r.string ?? r.uid}
+              labelElement={<small>{name}</small>}
+              onClick={() => {
+                window.roamAlphaAPI.ui.mainWindow.openBlock({
+                  block: {
+                    uid: r.uid,
+                  },
+                });
+              }}
+            />
+          ));
+          //   return (
+          //     <Menu.Item key={name} text={name} onClick={() => {
+          //         window.roamAlphaAPI.ui.mainWindow.openPage({
+          //             page: {
+          //                 // uid: name,
+          //                 title: name
+          //             },
+          //         });
+          //     }}>
+          //       {/* {p.map(r => {
+          //                 return <Menu.Item key={r.uid} text={r.string ?? r.uid} />
+          //             })} */}
+          //     </Menu.Item>
+          //   );
+        })}
       </Menu>
     </>
   );
