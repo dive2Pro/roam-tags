@@ -1,4 +1,11 @@
-import { Button, Menu, Tooltip } from "@blueprintjs/core";
+import {
+  Button,
+  Icon,
+  Menu,
+  MenuDivider,
+  MenuItem,
+  Tooltip,
+} from "@blueprintjs/core";
 import { useMemo, useState } from "react";
 // 最底层：一条 block 的引用
 export interface BlockRef {
@@ -82,38 +89,62 @@ export function TagedPages({
   onBack: () => void;
 }) {
   const pageList = useMemo(() => cloneAndMergeRefs(tag), [tag]);
+  console.log({ pageList, tag });
   return (
     <>
-      <Button
-        icon="arrow-left"
-        minimal
-        onClick={onBack}
-        style={{ marginBottom: 8 }}
-      >
-        返回树形视图
-      </Button>
+      <div className="taged-toolbar">
+        <Button
+          icon="arrow-left"
+          minimal
+          small
+          onClick={onBack}
+          style={{ marginBottom: 8 }}
+        ></Button>
+      </div>
+      {/* <div style={{
+      }}>
+        <Icon icon="tag"></Icon>
+        <span style={{ marginLeft: 4, fontSize: 16 }}>
+          {pageList.title}
+          <small style={{ marginLeft: 4 }}>{tag.count}</small>
+        </span>
+      </div> */}
       <Menu
         className="bp3-dark"
         style={{
           overflow: "auto",
+          height: "100%",
         }}
       >
         {Array.from(pageList.refs.entries()).map(([name, p]) => {
-          console.log({ name, p });
-          return p.map((r) => (
-            <Menu.Item
-              key={r.uid}
-              text={r.string ?? r.uid}
-              labelElement={<small>{name}</small>}
-              onClick={() => {
-                window.roamAlphaAPI.ui.mainWindow.openBlock({
-                  block: {
-                    uid: r.uid,
+          return (
+            <>
+              <div onClick={() => {
+                
+                window.roamAlphaAPI.ui.mainWindow.openPage({
+                  page: {
+                    uid: p[0].page?.uid ?? p[0].uid,
                   },
                 });
-              }}
-            />
-          ));
+              }}>
+                <MenuDivider title={name} />
+              </div>
+              {p.map((r) => (
+                <Menu.Item
+                  key={r.uid}
+                  text={r.string ?? r.uid}
+                  //   labelElement={<small>{name}</small>}
+                  onClick={() => {
+                    window.roamAlphaAPI.ui.mainWindow.openBlock({
+                      block: {
+                        uid: r.uid,
+                      },
+                    });
+                  }}
+                />
+              ))}
+            </>
+          );
           //   return (
           //     <Menu.Item key={name} text={name} onClick={() => {
           //         window.roamAlphaAPI.ui.mainWindow.openPage({

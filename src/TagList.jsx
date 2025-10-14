@@ -48,13 +48,24 @@ const putChain = (root, tagChain, page) => {
 
 async function getDataWithNestedTagsAndCount() {
   const flatPages = await window.roamAlphaAPI.data.async.q(`[
-      :find [(pull ?page [:block/uid :node/title {:block/_refs [:block/string :block/uid {:block/page [:node/title :block/uid]}]}]) ...]
-      :where
-        [?block :block/refs ?page]
-        [?page :node/title ?page-title]
-        [?block :block/string ?block-string]
-        [(clojure.string/includes? ?block-string "#")]
-    ]`);
+    :find [(pull ?page [:block/uid :node/title 
+      {:block/_refs [:block/string :block/uid 
+        {:block/page 
+          [
+            :node/title :block/uid {:block/refs ...}
+          ]
+        }
+        
+         {:block/refs [:block/uid :node/title :block/string] }
+        ]
+      }
+        ]) ...]
+    :where
+      [?block :block/refs ?page]
+      [?page :node/title ?page-title]
+      [?block :block/string ?block-string]
+      [(clojure.string/includes? ?block-string "#")]
+  ]`);
 
   // 1. 过滤出真正引用自身的块
   const filtered = flatPages
@@ -75,7 +86,7 @@ async function getDataWithNestedTagsAndCount() {
     if (chains.length) putChain(nested, chains, page);
   });
 
-  console.log({ nested });
+  console.log({ filtered });
   return nested;
 }
 
@@ -93,9 +104,13 @@ function useSourcesAndPages() {
   useEffect(() => {
     onRefresh();
 
-    return document.body.leave(".rm-block-input", () => {
+    const onBlur = () => {
       onRefresh();
-    });
+    };
+    document.body.leave(".rm-block-input", onBlur);
+    return () => {
+      document.body.unbindLeave(".rm-block-input", onBlur)
+    }
   }, []);
   const alphaSortChange = (dir) => {
     setSortKey("alpha");
@@ -106,17 +121,6 @@ function useSourcesAndPages() {
   const countSortChange = (dir) => {
     setSortKey("count");
     setSortDir(dir);
-    setPage(0);
-  };
-
-  /* 排序切换 */
-  const toggleSort = (key) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
-    } else {
-      setSortKey(key);
-      setSortDir(key === "count" ? "desc" : "asc");
-    }
     setPage(0);
   };
 
@@ -184,7 +188,7 @@ function useSourcesAndPages() {
           disabled={page + 1 >= pageCount}
           onClick={() => setPage((p) => p + 1)}
         ></Button>
-        
+
         <Button minimal small onClick={onRefresh} icon="refresh"></Button>
         <Tooltip content={"Change sort order"}>
           <Popover
