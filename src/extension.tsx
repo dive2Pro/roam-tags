@@ -50,9 +50,6 @@ function TagEl() {
         <div
           style={{ flex: "0 0 1px", backgroundColor: "rgb(57, 75, 89)" }}
         ></div>
-        <div style={{ flex: "0 0 16px" }}>
-          <Button icon="drawer-left"></Button>
-        </div>
         <Main />
       </div>
     </>
