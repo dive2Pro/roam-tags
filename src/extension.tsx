@@ -60,7 +60,8 @@ export function initExtension() {
   // 插入位置 rm-left-sidebar__roam-depot
   const div = document.createElement("div");
   starredPagesWrapper.parentElement.insertBefore(div, starredPagesWrapper);
-  ReactDOM.createRoot(div).render((<Extension />) as any);
+  const divRoot = ReactDOM.createRoot(div)
+  divRoot.render((<Extension />) as any);
   // 插入要 Tag list
   const tagListDiv = document.createElement("div");
   tagListDiv.classList.add("roam-tags-tag-list");
@@ -68,10 +69,13 @@ export function initExtension() {
     tagListDiv,
     starredPagesWrapper
   );
-  ReactDOM.createRoot(tagListDiv).render((<TagEl />) as any);
+  const tagRoot = ReactDOM.createRoot(tagListDiv);
+  tagRoot.render((<TagEl />) as any);
   // 卸载时需要移除 DOM 元素
   extension_helper.on_uninstall(() => {
     // ReactDOM.createRoot(div).unmount();
+    divRoot.unmount();
+    tagRoot.unmount();
     div.remove();
     tagListDiv.remove();
   });

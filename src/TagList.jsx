@@ -1,5 +1,14 @@
-import React from "react";
-import { Button, Tree } from "@blueprintjs/core";
+import React, { useEffect } from "react";
+import {
+  Button,
+  ButtonGroup,
+  Menu,
+  MenuDivider,
+  MenuItem,
+  Popover,
+  Tooltip,
+  Tree,
+} from "@blueprintjs/core";
 import { TagedPages } from "./TagedPages";
 
 const PAGE_SIZE = 20;
@@ -66,7 +75,7 @@ async function getDataWithNestedTagsAndCount() {
     if (chains.length) putChain(nested, chains, page);
   });
 
-  console.log({ nested })
+  console.log({ nested });
   return nested;
 }
 
@@ -81,6 +90,24 @@ function useSourcesAndPages() {
   const [expanded, setExpanded] = React.useState(new Set());
 
   const onRefresh = () => getDataWithNestedTagsAndCount().then(setTree);
+  useEffect(() => {
+    onRefresh();
+
+    return document.body.leave(".rm-block-input", () => {
+      onRefresh();
+    });
+  }, []);
+  const alphaSortChange = (dir) => {
+    setSortKey("alpha");
+    setSortDir(dir);
+    setPage(0);
+  };
+
+  const countSortChange = (dir) => {
+    setSortKey("count");
+    setSortDir(dir);
+    setPage(0);
+  };
 
   /* 排序切换 */
   const toggleSort = (key) => {
@@ -139,31 +166,67 @@ function useSourcesAndPages() {
   };
   const renderToolbar = () => {
     return (
-      <>
-        <Button onClick={onRefresh}>Refresh</Button>
-        {/* 首层控制栏 */}
-        <div className="root-bar">
-          <Button onClick={() => toggleSort("count")}>
-            Count {sortKey === "count" && (sortDir === "desc" ? "↓" : "↑")}
-          </Button>
-          <Button onClick={() => toggleSort("alpha")}>
-            A-Z {sortKey === "alpha" && (sortDir === "asc" ? "↑" : "↓")}
-          </Button>
+      <div className="tag-toolbar">
+        <Button
+          icon="arrow-left"
+          minimal
+          small
+          disabled={page <= 0}
+          onClick={() => setPage((p) => p - 1)}
+        ></Button>
+        <span>
+          {page + 1} / {pageCount || 1}
+        </span>
+        <Button
+          minimal
+          small
+          icon="arrow-right"
+          disabled={page + 1 >= pageCount}
+          onClick={() => setPage((p) => p + 1)}
+        ></Button>
+        
+        <Button minimal small onClick={onRefresh} icon="refresh"></Button>
+        <Tooltip content={"Change sort order"}>
+          <Popover
+            content={
+              <Menu>
+                <MenuItem
+                  text="Count (desc)"
+                  onClick={() => countSortChange("desc")}
+                />
+                <MenuItem
+                  text="Count (asc)"
+                  onClick={() => countSortChange("asc")}
+                />
+                <MenuDivider />
+                <MenuItem
+                  text="Title (a-z)"
+                  onClick={() => alphaSortChange("asc")}
+                />
+                <MenuItem
+                  text="Title (z-a)"
+                  onClick={() => alphaSortChange("desc")}
+                />
+              </Menu>
+            }
+          >
+            <Button
+              small
+              minimal
+              active={sortKey !== "count" || sortDir !== "desc"}
+              icon={(() => {
+                if (sortKey === "alpha")
+                  return sortDir === "desc"
+                    ? "sort-alphabetical-desc"
+                    : "sort-alphabetical";
+                else return sortDir === "desc" ? "sort-desc" : "sort-asc";
+              })()}
+            />
+          </Popover>
+        </Tooltip>
 
-          <span className="pager">
-            <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-              ‹
-            </button>
-            {page + 1} / {pageCount || 1}
-            <button
-              disabled={page + 1 >= pageCount}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              ›
-            </button>
-          </span>
-        </div>
-      </>
+        <Button minimal small icon="drawer-left"></Button>
+      </div>
     );
   };
   return { bpNodes, onRefresh, toggleExpand, renderToolbar };
@@ -175,27 +238,12 @@ export default function Main() {
   const [mode, setMode] = React.useState("tree");
 
   const [currentTag, setCurrentTag] = React.useState("");
-  function collectPages(node) {
-    const map = new Map();
-    function dfs(n) {
-      n.pages?.forEach((p) =>
-        map.set(p.uid, { title: p.title, uid: p.uid, string: p.string })
-      );
-      Object.values(n.children || {}).forEach(dfs);
-    }
-    dfs(node);
-    return Array.from(map.values());
-  }
 
   const handleNodeClick = (node) => {
-    /* 图标展开/收起逻辑保持不变 */
-    // const iconClicked = (e.target).closest('.bp4-tree-node-icon');
-    // if (iconClicked) return;
-
     const tag = node.tag;
     if (!tag) return;
 
-    /* 1. 业务高亮（原逻辑） TODO */ 
+    /* 1. 业务高亮（原逻辑） TODO */
     // const same = tag.pages?.[0]?.tags || [];
     // setActiveTags((prev) => (prev.includes(tag) ? [] : same));
 
@@ -209,7 +257,6 @@ export default function Main() {
 
   return (
     <>
-      <Button icon="drawer-left"></Button>
       {mode === "tree" ? (
         <>
           {renderToolbar()}
