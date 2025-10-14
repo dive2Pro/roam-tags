@@ -188,6 +188,7 @@ export default function Main() {
   const total = Object.keys(tree).length;
   const pageCount = Math.ceil(total / PAGE_SIZE);
   const toggleExpand = (id) => {
+    console.log("toggleExpand", id);
     setExpanded((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -256,11 +257,12 @@ export default function Main() {
 function toBlueprintNodes(obj, depth = 0, activeTags = [], expanded) {
   return Object.entries(obj).map(([tag, { pages, count, children }]) => {
     const isActive = activeTags.includes(tag);
+    const id = `${depth}-${tag}`;
     const node = {
-      id: `${depth}-${tag}`, // 唯一即可
+      id, // 唯一即可
       label: (
         <span className={isActive ? "bp4-text-primary" : ""}>
-          {tag} <span style={{ fontSize: 12, color: "#666" }}>({count})</span>
+          {tag} <span className="tag-count" style={{ fontSize: 12 }}>({count})</span>
         </span>
       ),
       // icon: IconNames.TAG,
@@ -268,7 +270,7 @@ function toBlueprintNodes(obj, depth = 0, activeTags = [], expanded) {
         Object.keys(children).length > 0
           ? toBlueprintNodes(children, depth + 1, activeTags, expanded)
           : undefined,
-      isExpanded: expanded.has(tag), // 首层默认展开，子层按需
+      isExpanded: expanded.has(id), // 首层默认展开，子层按需
     };
     return node;
   });
