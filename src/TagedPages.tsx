@@ -7,6 +7,7 @@ import {
   Tooltip,
 } from "@blueprintjs/core";
 import { useMemo, useState } from "react";
+import { useCurrentTagState } from "./useModeState";
 // 最底层：一条 block 的引用
 export interface BlockRef {
   uid: string;
@@ -81,15 +82,17 @@ type Page = {
   };
 };
 
-export function TagedPages({
-  tag,
-  onBack,
-}: {
-  tag: TagNode;
-  onBack: () => void;
-}) {
-  const pageList = useMemo(() => cloneAndMergeRefs(tag), [tag]);
-  console.log({ pageList, tag });
+export function TagedPages({ onBack }: { onBack: () => void }) {
+  const [tag] = useCurrentTagState();
+  const pageList = useMemo(() => {
+    if (!tag) {
+      return {
+        refs: new Map()
+      } as unknown as ReturnType<typeof cloneAndMergeRefs>;
+    }
+    return cloneAndMergeRefs(tag);
+  }, [tag]);
+  console.log({ tag }, 'TagedPages', pageList);
   return (
     <>
       <div className="taged-toolbar">
@@ -119,14 +122,15 @@ export function TagedPages({
         {Array.from(pageList.refs.entries()).map(([name, p]) => {
           return (
             <>
-              <div onClick={() => {
-                
-                window.roamAlphaAPI.ui.mainWindow.openPage({
-                  page: {
-                    uid: p[0].page?.uid ?? p[0].uid,
-                  },
-                });
-              }}>
+              <div
+                onClick={() => {
+                  window.roamAlphaAPI.ui.mainWindow.openPage({
+                    page: {
+                      uid: p[0].page?.uid ?? p[0].uid,
+                    },
+                  });
+                }}
+              >
                 <MenuDivider title={name} />
               </div>
               {p.map((r) => (

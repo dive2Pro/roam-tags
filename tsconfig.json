@@ -26,6 +26,7 @@
     "node_modules"
   ],
   "files": [
-    "node_modules/roamjs-components/types/index.d.ts"
+    "node_modules/roamjs-components/types/index.d.ts",
+    "./src/useModeState.jsx"
   ]
 }

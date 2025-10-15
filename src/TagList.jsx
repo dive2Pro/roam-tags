@@ -1,15 +1,18 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Button,
   ButtonGroup,
+  Icon,
   Menu,
-  MenuDivider,
   MenuItem,
   Popover,
   Tooltip,
   Tree,
+  MenuDivider,
 } from "@blueprintjs/core";
 import { TagedPages } from "./TagedPages";
+import { close, initEl } from "./dualColumn";
+import { useModeState, useCurrentTagState, useDualColumnState } from "./useModeState";
 
 const PAGE_SIZE = 20;
 
@@ -93,7 +96,7 @@ async function getDataWithNestedTagsAndCount() {
 function useSourcesAndPages() {
   const [tree, setTree] = React.useState({});
   const [activeTags, setActiveTags] = React.useState([]);
-
+  const [isOpen, setIsOpen] = useDualColumnState();
   /* 首层排序状态 */
   const [sortKey, setSortKey] = React.useState("count");
   const [sortDir, setSortDir] = React.useState("desc");
@@ -109,8 +112,8 @@ function useSourcesAndPages() {
     };
     document.body.leave(".rm-block-input", onBlur);
     return () => {
-      document.body.unbindLeave(".rm-block-input", onBlur)
-    }
+      document.body.unbindLeave(".rm-block-input", onBlur);
+    };
   }, []);
   const alphaSortChange = (dir) => {
     setSortKey("alpha");
@@ -143,12 +146,17 @@ function useSourcesAndPages() {
       rootEntries.map(([name, tag]) => ({
         id: name,
         label: (
-          <span className={activeTags.includes(name) ? "bp4-text-primary" : ""}>
+          <div
+            className={`${
+              activeTags.includes(name) ? "bp3-text-primary" : ""
+            } tag-label`}
+          >
+            <Icon icon="tag" />
             {name}{" "}
             <span className="tag-count" style={{ fontSize: 12 }}>
               ({tag.count})
             </span>
-          </span>
+          </div>
         ),
         tag,
         isExpanded: expanded.has(name), // 首层默认展开
@@ -168,6 +176,8 @@ function useSourcesAndPages() {
       return next;
     });
   };
+  const [mode, setMode] = useModeState();
+  const [currentTag, setCurrentTag] = useCurrentTagState();
   const renderToolbar = () => {
     return (
       <div className="tag-toolbar">
@@ -228,20 +238,43 @@ function useSourcesAndPages() {
             />
           </Popover>
         </Tooltip>
-
-        <Button minimal small icon="drawer-left"></Button>
+        <Button
+          minimal
+          small
+          active={isOpen}
+          icon={isOpen ? "drawer-left" : "drawer-right"}
+          onClick={() => {
+            const onClose = () => {
+              setIsOpen(false);
+              close();
+            };
+            if (isOpen) {
+              onClose();
+            } else {
+              setIsOpen(true);
+              initEl();
+            }
+            setMode("tree");
+          }}
+        ></Button>
       </div>
     );
   };
-  return { bpNodes, onRefresh, toggleExpand, renderToolbar };
+  return {
+    bpNodes,
+    onRefresh,
+    toggleExpand,
+    renderToolbar,
+    isSidebarOpen: isOpen,
+  };
 }
 
 export default function Main() {
-  const { bpNodes, toggleExpand, renderToolbar } = useSourcesAndPages();
+  const { bpNodes, toggleExpand, renderToolbar, isSidebarOpen } =
+    useSourcesAndPages();
 
-  const [mode, setMode] = React.useState("tree");
-
-  const [currentTag, setCurrentTag] = React.useState("");
+  const [mode, setMode] = useModeState();
+  const [currentTag, setCurrentTag] = useCurrentTagState();
 
   const handleNodeClick = (node) => {
     const tag = node.tag;
@@ -252,11 +285,11 @@ export default function Main() {
     // setActiveTags((prev) => (prev.includes(tag) ? [] : same));
 
     console.log({ tag });
-    /* 2. 进入 pages 视图 */
-    // const pages = cloneAndMergeRefs(tag);
-    // console.log({ pages })
     setCurrentTag(tag);
-    setMode("pages");
+
+    if (!isSidebarOpen) {
+      setMode("pages");
+    }
   };
 
   return (
@@ -295,12 +328,13 @@ function toBlueprintNodes(obj, depth = 0, activeTags = [], expanded) {
     const node = {
       id, // 唯一即可
       label: (
-        <span className={isActive ? "bp4-text-primary" : ""}>
+        <div className={`${isActive ? "bp3-text-primary" : ""} tag-label`}>
+          <Icon icon="tag" />
           {name}{" "}
           <span className="tag-count" style={{ fontSize: 12 }}>
             ({tag.count})
           </span>
-        </span>
+        </div>
       ),
       // icon: IconNames.TAG,
       tag,
