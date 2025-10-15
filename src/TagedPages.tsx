@@ -1,10 +1,13 @@
 import {
   Button,
   ButtonGroup,
+  Classes,
   Icon,
   Menu,
   MenuDivider,
   MenuItem,
+  Popover,
+  Switch,
   Tooltip,
 } from "@blueprintjs/core";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -64,6 +67,8 @@ export function mergeRefs(root: TagNode, showDescendants: boolean) {
 export function TagedPages({ onBack }: { onBack: () => void }) {
   const [tag] = useCurrentTagState();
   const [showDescendants, setShowDescendants] = useShowDescendantsState();
+  const { groupBy, sortBy, setGroupBy, setSortBy } = usePageGroupSort();
+
   const pageMap = useMemo(() => {
     if (!tag) {
       return null;
@@ -72,24 +77,28 @@ export function TagedPages({ onBack }: { onBack: () => void }) {
   }, [tag, showDescendants]);
   console.log({ tag });
   return (
-    <>
+    <div className="taged-list">
       <div className="taged-toolbar">
-        <Button
-          icon="arrow-left"
-          small
-          onClick={onBack}
-          style={{ marginBottom: 8 }}
-        ></Button>
-        {/* @ts-ignore */}
-        <Tooltip position="bottom" content={"show notes from descendants"}>
-          <Button
-            minimal
-            onClick={() => setShowDescendants(!showDescendants)}
-            icon="layers"
-            active={showDescendants}
-            small
-          ></Button>
-        </Tooltip>
+        <Button icon="drawer-right" small minimal onClick={onBack}></Button>
+
+        <ButtonGroup>
+          <ViewSettingsMenu
+            groupBy={groupBy}
+            sortBy={sortBy}
+            setGroupBy={setGroupBy}
+            setSortBy={setSortBy}
+          />
+          {/* @ts-ignore */}
+          <Tooltip position="bottom" content={"show notes from descendants"}>
+            <Button
+              minimal
+              onClick={() => setShowDescendants(!showDescendants)}
+              icon="layers"
+              active={showDescendants}
+              small
+            ></Button>
+          </Tooltip>
+        </ButtonGroup>
       </div>
       {/* <div style={{
       }}>
@@ -173,7 +182,7 @@ export function TagedPages({ onBack }: { onBack: () => void }) {
           })}
         </Menu>
       )}
-    </>
+    </div>
   );
 }
 
@@ -189,3 +198,123 @@ function RoamBlockString({ text }: { text: string }) {
   //   return <span ref={ref}>{text}</span>;
   return <>{text}</>;
 }
+
+type GroupBy = "none" | "page" | "editDate";
+type SortBy =
+  | "editNewFirst"
+  | "editOldFirst"
+  | "createNewFirst"
+  | "createOldFirst"
+  | "titleAsc"
+  | "titleDesc";
+
+interface Return {
+  groupBy: GroupBy;
+  sortBy: SortBy;
+  setGroupBy: (g: GroupBy) => void;
+  setSortBy: (s: SortBy) => void;
+}
+
+export function usePageGroupSort(): Return {
+  const [groupBy, setGroupBy] = useState<GroupBy>("page")
+  const [sortBy, setSortBy] = useState<SortBy>("editNewFirst");
+
+  return { groupBy, sortBy, setGroupBy, setSortBy };
+}
+
+export const ViewSettingsMenu = (props: Return) => {
+  const { groupBy, sortBy, setGroupBy, setSortBy } = props;
+
+  const handleGroupToggle = (val: GroupBy) => () => {
+    // 互斥：同一时刻只能按 page 或按 editDate 或不 group
+    setGroupBy(groupBy === val ? "none" : val);
+  };
+
+  const handleSort = (s: SortBy) => () => setSortBy(s);
+
+  const showTitleSort = groupBy === "page";
+
+  return (
+    // @ts-ignore
+    <Popover
+      position="bottom-right"
+      autoFocus={false}
+      popoverClassName="taged-menu"
+      enforceFocus={false}
+      content={
+        <Menu>
+          <div>
+            <strong>Group</strong>
+          </div>
+          <Switch
+            alignIndicator="right"
+            checked={groupBy === "page"}
+            labelElement={<span>Group by page</span>}
+            onChange={handleGroupToggle("page")}
+          />
+
+          <Switch
+            alignIndicator="right"
+            checked={groupBy === "editDate"}
+            labelElement={<span>Group by edit date</span>}
+            onChange={handleGroupToggle("editDate")}
+          />
+
+          <div>
+            <strong>Sort by</strong>
+          </div>
+          {!showTitleSort ? (
+            <>
+              <MenuItem
+                text="Date edited (newest on top)"
+                active={sortBy === "editNewFirst"}
+                icon={sortBy === "editNewFirst" ? "tick" : 'blank'}
+                onClick={handleSort("editNewFirst")}
+                shouldDismissPopover={false}
+              />
+              <MenuItem
+                text="Date edited (oldest on top)"
+                active={sortBy === "editOldFirst"}
+                onClick={handleSort("editOldFirst")}
+                icon={sortBy === "editOldFirst" ? "tick" : 'blank'}
+                shouldDismissPopover={false}
+              />
+              <MenuItem
+                text="Date created (newest on top)"
+                active={sortBy === "createNewFirst"}
+                onClick={handleSort("createNewFirst")}
+                icon={sortBy === "createNewFirst" ? "tick" : 'blank'}
+                shouldDismissPopover={false}
+              />
+              <MenuItem
+                text="Date created (oldest on top)"
+                active={sortBy === "createOldFirst"}
+                onClick={handleSort("createOldFirst")}
+                icon={sortBy === "createOldFirst" ? "tick" : 'blank'}
+                shouldDismissPopover={false}
+              />
+            </>
+          ) : null}
+
+          {/* 仅当 groupBy === 'page' 时才渲染 Title 排序 */}
+          {showTitleSort && (
+            <>
+              <MenuItem
+                text="Title (a-z)"
+                active={sortBy === "titleAsc"}
+                onClick={handleSort("titleAsc")}
+              />
+              <MenuItem
+                text="Title (z-a)"
+                active={sortBy === "titleDesc"}
+                onClick={handleSort("titleDesc")}
+              />
+            </>
+          )}
+        </Menu>
+      }
+    >
+      <Button small minimal icon="settings" />
+    </Popover>
+  );
+};

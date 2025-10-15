@@ -104,6 +104,12 @@ function useSourcesAndPages() {
   const [expanded, setExpanded] = React.useState(new Set());
 
   const onRefresh = () => getDataWithNestedTagsAndCount().then(setTree);
+
+  useEffect(() => {
+    if (isOpen) {
+      initEl();
+    }
+  }, []);
   useEffect(() => {
     onRefresh();
 
@@ -239,25 +245,27 @@ function useSourcesAndPages() {
             />
           </Popover>
         </Tooltip>
-        <Button
-          minimal
-          small
-          active={isOpen}
-          icon={!isOpen ? "drawer-left" : "drawer-right"}
-          onClick={() => {
-            const onClose = () => {
-              setIsOpen(false);
-              close();
-            };
-            if (isOpen) {
-              onClose();
-            } else {
-              setIsOpen(true);
-              initEl();
-            }
-            setMode("tree");
-          }}
-        ></Button>
+        <ButtonGroup minimal small>
+          <Button
+            minimal
+            small
+            active={isOpen}
+            icon={!isOpen ? "drawer-left" : "drawer-right"}
+            onClick={() => {
+              const onClose = () => {
+                setIsOpen(false);
+                close();
+              };
+              if (isOpen) {
+                onClose();
+              } else {
+                setIsOpen(true);
+                initEl();
+              }
+              setMode("tree");
+            }}
+          ></Button>
+        </ButtonGroup>
       </div>
     );
   };
