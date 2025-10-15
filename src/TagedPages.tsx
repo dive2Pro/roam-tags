@@ -113,7 +113,6 @@ export function TagedPages({ onBack }: { onBack: () => void }) {
         </span>
       </div> */}
       <Menu
-        className="bp3-dark"
         style={{
           overflow: "auto",
           height: "100%",

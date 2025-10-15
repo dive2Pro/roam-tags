@@ -242,7 +242,7 @@ function useSourcesAndPages() {
           minimal
           small
           active={isOpen}
-          icon={isOpen ? "drawer-left" : "drawer-right"}
+          icon={!isOpen ? "drawer-left" : "drawer-right"}
           onClick={() => {
             const onClose = () => {
               setIsOpen(false);
@@ -312,9 +312,9 @@ export default function Main() {
       ) : null}
 
       {mode === "pages" ? (
-        <>
+        <div className="bp3-dark">
           <TagedPages onBack={() => setMode("tree")} tag={currentTag} />
-        </>
+        </div>
       ) : null}
     </>
   );

@@ -11,8 +11,8 @@ import { TagedPages } from "./TagedPages";
 
 const roamMainEl = document.querySelector(".roam-main");
 const el = document.createElement("div");
-el.classList.add("dual-column-container");
-const root = ReactDom.createRoot(el);
+roamMainEl.parentElement.insertBefore(el, roamMainEl);
+let root = ReactDom.createRoot(el);
 
 function Comp() {
   const [mode, setMode] = useModeState();
@@ -28,6 +28,7 @@ function Comp() {
         onBack={() => {
           setMode("tree");
           setIsOpen(false);
+          close();
         }}
       />
     </div>
@@ -35,15 +36,18 @@ function Comp() {
 }
 
 export function initEl() {
-  roamMainEl.parentElement.insertBefore(el, roamMainEl);
+  el.classList.add("dual-column-container");
   extension_helper.on_uninstall(() => {
     close();
   });
+  root = ReactDom.createRoot(el);
   // @ts-ignore
   root.render(<Comp />);
 }
 
 export function close() {
+  //   root.unmount();
   root.unmount();
-  roamMainEl.parentElement.removeChild(el);
+  el.classList.remove("dual-column-container");
+  //   roamMainEl.parentElement.removeChild(el);
 }
