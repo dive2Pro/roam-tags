@@ -16,7 +16,7 @@ import {
   useModeState,
   useCurrentTagState,
   useDualColumnState,
-} from "./useModeState";
+} from "./useSingletonState";
 import { debounce } from "./utils";
 
 const PAGE_SIZE = 20;
@@ -32,7 +32,7 @@ const splitTags = (title = "") =>
 const putChain = (root, tagChain, page) => {
   let cur = root;
   tagChain.forEach((tag) => {
-    if (!cur[tag]) cur[tag] = { pages: [], count: 0, children: {} };
+    if (!cur[tag]) cur[tag] = { page: {}, count: 0, children: {} };
     cur[tag].count += page.refs.length; // 每经过一次就 +1
     cur = cur[tag].children;
   });
@@ -46,12 +46,7 @@ const putChain = (root, tagChain, page) => {
       return o[t].children;
     }, root);
 
-  if (
-    leafContainer.pages &&
-    !leafContainer.pages?.find((p) => p.uid === page.uid)
-  ) {
-    leafContainer.pages.push(page);
-  }
+  leafContainer.page = page;
 };
 
 async function getDataWithNestedTagsAndCount() {
@@ -184,7 +179,6 @@ function useSourcesAndPages() {
     });
   };
   const [mode, setMode] = useModeState();
-  const [currentTag, setCurrentTag] = useCurrentTagState();
   const renderToolbar = () => {
     return (
       <div className="tag-toolbar">

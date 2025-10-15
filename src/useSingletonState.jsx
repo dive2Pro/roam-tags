@@ -24,3 +24,4 @@ function createSingletonState(initialValue) {
 export const useModeState = createSingletonState("tree");
 export const useCurrentTagState = createSingletonState("");
 export const useDualColumnState = createSingletonState(false);
+export const useShowDescendantsState = createSingletonState(true);

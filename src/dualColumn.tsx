@@ -3,7 +3,7 @@ import { extension_helper } from "./helper";
 import {
   useDualColumnState,
   useModeState,
-} from "./useModeState";
+} from "./useSingletonState";
 import { TagedPages } from "./TagedPages";
 
 const roamMainEl = document.querySelector(".roam-main");

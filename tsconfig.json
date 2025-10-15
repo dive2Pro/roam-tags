@@ -27,6 +27,6 @@
   ],
   "files": [
     "node_modules/roamjs-components/types/index.d.ts",
-    "./src/useModeState.jsx"
+    "src/useSingletonState.jsx"
   ]
 }

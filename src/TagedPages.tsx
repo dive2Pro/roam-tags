@@ -1,13 +1,17 @@
 import {
   Button,
+  ButtonGroup,
   Icon,
   Menu,
   MenuDivider,
   MenuItem,
   Tooltip,
 } from "@blueprintjs/core";
-import { useMemo, useState } from "react";
-import { useCurrentTagState } from "./useModeState";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCurrentTagState,
+  useShowDescendantsState,
+} from "./useSingletonState";
 import { type } from "os";
 // 最底层：一条 block 的引用
 export interface BlockRef {
@@ -29,7 +33,7 @@ export interface PageItem {
 
 // 一个 tag 节点
 export interface TagNode {
-  pages: PageItem[];
+  page: PageItem;
   count: number;
   children: Record<string, TagNode>; // 子层
 }
@@ -37,13 +41,10 @@ export interface TagNode {
 // 根对象
 export type TagRoot = Record<string, TagNode>;
 
-/**
- * 深度拷贝并合并 refs（相同 title 只保留第一条）
- */
-export function cloneAndMergeRefs(root: TagNode) {
+export function mergeRefs(root: TagNode, showDescendants: boolean) {
   const seen = new Map<string, BlockRef[]>();
-  function mergePageRefs(page: PageItem) {
-    page.refs.forEach((r) => {
+  function mergePageRefs(node: TagNode) {
+    node.page?.refs?.forEach((r) => {
       const t = r.page?.title ?? r.uid;
       if (!seen.has(t)) {
         seen.set(t, [r]);
@@ -52,58 +53,43 @@ export function cloneAndMergeRefs(root: TagNode) {
         refs.push(r);
       }
     });
-
-    return { ...page, refs: seen };
+    if (showDescendants) {
+      Object.values(node.children).forEach(mergePageRefs);
+    }
   }
-
-  function cloneNode(node: TagNode) {
-    return node.pages.map(mergePageRefs)[0];
-    // return {
-    //   pages: node.pages.map(mergePageRefs),
-    //   count: node.count,
-    //   // children: Object.fromEntries(
-    //   //   Object.entries(node.children)?.map(([k, v]) => [k, cloneNode(v)])
-    //   // ),
-    //   children: node.children,
-    // };
-  }
-
-  return cloneNode(root);
+  mergePageRefs(root);
+  return seen;
 }
-
-export function getTagRefs() {}
-
-type Page = {
-  uid: string;
-  title: string;
-  string?: string;
-  page: {
-    uid: string;
-    title: string;
-  };
-};
 
 export function TagedPages({ onBack }: { onBack: () => void }) {
   const [tag] = useCurrentTagState();
-  const pageList = useMemo(() => {
+  const [showDescendants, setShowDescendants] = useShowDescendantsState();
+  const pageMap = useMemo(() => {
     if (!tag) {
-      return {
-        refs: new Map(),
-      } as unknown as ReturnType<typeof cloneAndMergeRefs>;
+      return null;
     }
-    return cloneAndMergeRefs(tag);
-  }, [tag]);
-  console.log({ tag }, "TagedPages", pageList);
+    return mergeRefs(tag, showDescendants);
+  }, [tag, showDescendants]);
+  console.log({ tag });
   return (
     <>
       <div className="taged-toolbar">
         <Button
           icon="arrow-left"
-          minimal
           small
           onClick={onBack}
           style={{ marginBottom: 8 }}
         ></Button>
+        {/* @ts-ignore */}
+        <Tooltip position="bottom" content={"show notes from descendants"}>
+          <Button
+            minimal
+            onClick={() => setShowDescendants(!showDescendants)}
+            icon="layers"
+            active={showDescendants}
+            small
+          ></Button>
+        </Tooltip>
       </div>
       {/* <div style={{
       }}>
@@ -113,76 +99,93 @@ export function TagedPages({ onBack }: { onBack: () => void }) {
           <small style={{ marginLeft: 4 }}>{tag.count}</small>
         </span>
       </div> */}
-      <Menu
-        style={{
-          overflow: "auto",
-          height: "100%",
-        }}
-      >
-        {Array.from(pageList.refs.entries()).map(([name, p]) => {
-          return (
-            <>
-              <div
-                onClick={(e) => {
-                  if (e.shiftKey) {
-                    window.roamAlphaAPI.ui.rightSidebar.addWindow({
-                      window: {
-                        type: "block",
-                        "block-uid": p[0].page?.uid,
-                      },
-                    });
-                    return;
-                  }
-                  window.roamAlphaAPI.ui.mainWindow.openPage({
-                    page: {
-                      uid: p[0].page?.uid ?? p[0].uid,
-                    },
-                  });
-                }}
-              >
-                <MenuDivider title={name} />
-              </div>
-              {p.map((r) => (
-                <Menu.Item
-                  key={r.uid}
-                  text={r.string ?? r.uid}
-                  //   labelElement={<small>{name}</small>}
+      {!pageMap ? null : (
+        <Menu
+          style={{
+            overflow: "auto",
+            height: "100%",
+          }}
+        >
+          {Array.from(pageMap.entries()).map(([name, p]) => {
+            return (
+              <>
+                <div
                   onClick={(e) => {
                     if (e.shiftKey) {
                       window.roamAlphaAPI.ui.rightSidebar.addWindow({
                         window: {
                           type: "block",
-                          "block-uid": r.uid,
+                          "block-uid": p[0].page?.uid,
                         },
                       });
                       return;
                     }
-                    window.roamAlphaAPI.ui.mainWindow.openBlock({
-                      block: {
-                        uid: r.uid,
+                    window.roamAlphaAPI.ui.mainWindow.openPage({
+                      page: {
+                        uid: p[0].page?.uid ?? p[0].uid,
                       },
                     });
                   }}
-                />
-              ))}
-            </>
-          );
-          //   return (
-          //     <Menu.Item key={name} text={name} onClick={() => {
-          //         window.roamAlphaAPI.ui.mainWindow.openPage({
-          //             page: {
-          //                 // uid: name,
-          //                 title: name
-          //             },
-          //         });
-          //     }}>
-          //       {/* {p.map(r => {
-          //                 return <Menu.Item key={r.uid} text={r.string ?? r.uid} />
-          //             })} */}
-          //     </Menu.Item>
-          //   );
-        })}
-      </Menu>
+                >
+                  <MenuDivider title={name} />
+                </div>
+                {p.map((r) => (
+                  <Menu.Item
+                    key={r.uid}
+                    text={<RoamBlockString text={r.string ?? r.uid} />}
+                    //   labelElement={<small>{name}</small>}
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      if (e.shiftKey) {
+                        window.roamAlphaAPI.ui.rightSidebar.addWindow({
+                          window: {
+                            type: "block",
+                            "block-uid": r.uid,
+                          },
+                        });
+                        return;
+                      }
+                      window.roamAlphaAPI.ui.mainWindow.openBlock({
+                        block: {
+                          uid: r.uid,
+                        },
+                      });
+                    }}
+                  />
+                ))}
+              </>
+            );
+            //   return (
+            //     <Menu.Item key={name} text={name} onClick={() => {
+            //         window.roamAlphaAPI.ui.mainWindow.openPage({
+            //             page: {
+            //                 // uid: name,
+            //                 title: name
+            //             },
+            //         });
+            //     }}>
+            //       {/* {p.map(r => {
+            //                 return <Menu.Item key={r.uid} text={r.string ?? r.uid} />
+            //             })} */}
+            //     </Menu.Item>
+            //   );
+          })}
+        </Menu>
+      )}
     </>
   );
+}
+
+function RoamBlockString({ text }: { text: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    // @ts-ignore
+    // window.roamAlphaAPI.ui.components.renderString({
+    //   el: ref.current,
+    //   string: text,
+    // });
+  }, [text]);
+  //   return <span ref={ref}>{text}</span>;
+  return <>{text}</>;
 }
