@@ -1,9 +1,6 @@
-import { useState } from "react";
 import ReactDom from "react-dom/client";
 import { extension_helper } from "./helper";
-import { Button } from "@blueprintjs/core";
 import {
-  useCurrentTagState,
   useDualColumnState,
   useModeState,
 } from "./useModeState";
@@ -21,7 +18,10 @@ function Comp() {
   return (
     <div
       style={{
-        height: "100%",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        borderRight: "1px solid #dddd",
       }}
     >
       <TagedPages

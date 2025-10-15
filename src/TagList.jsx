@@ -12,7 +12,12 @@ import {
 } from "@blueprintjs/core";
 import { TagedPages } from "./TagedPages";
 import { close, initEl } from "./dualColumn";
-import { useModeState, useCurrentTagState, useDualColumnState } from "./useModeState";
+import {
+  useModeState,
+  useCurrentTagState,
+  useDualColumnState,
+} from "./useModeState";
+import { debounce } from "./utils";
 
 const PAGE_SIZE = 20;
 
@@ -107,9 +112,11 @@ function useSourcesAndPages() {
   useEffect(() => {
     onRefresh();
 
-    const onBlur = () => {
-      onRefresh();
-    };
+    const onBlur = debounce(() => {
+      window.requestIdleCallback(() => {
+        onRefresh();
+      });
+    }, 2000);
     document.body.leave(".rm-block-input", onBlur);
     return () => {
       document.body.unbindLeave(".rm-block-input", onBlur);

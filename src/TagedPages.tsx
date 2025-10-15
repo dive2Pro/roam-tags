@@ -8,6 +8,7 @@ import {
 } from "@blueprintjs/core";
 import { useMemo, useState } from "react";
 import { useCurrentTagState } from "./useModeState";
+import { type } from "os";
 // 最底层：一条 block 的引用
 export interface BlockRef {
   uid: string;
@@ -87,12 +88,12 @@ export function TagedPages({ onBack }: { onBack: () => void }) {
   const pageList = useMemo(() => {
     if (!tag) {
       return {
-        refs: new Map()
+        refs: new Map(),
       } as unknown as ReturnType<typeof cloneAndMergeRefs>;
     }
     return cloneAndMergeRefs(tag);
   }, [tag]);
-  console.log({ tag }, 'TagedPages', pageList);
+  console.log({ tag }, "TagedPages", pageList);
   return (
     <>
       <div className="taged-toolbar">
@@ -122,7 +123,16 @@ export function TagedPages({ onBack }: { onBack: () => void }) {
           return (
             <>
               <div
-                onClick={() => {
+                onClick={(e) => {
+                  if (e.shiftKey) {
+                    window.roamAlphaAPI.ui.rightSidebar.addWindow({
+                      window: {
+                        type: "block",
+                        "block-uid": p[0].page?.uid,
+                      },
+                    });
+                    return;
+                  }
                   window.roamAlphaAPI.ui.mainWindow.openPage({
                     page: {
                       uid: p[0].page?.uid ?? p[0].uid,
@@ -137,7 +147,16 @@ export function TagedPages({ onBack }: { onBack: () => void }) {
                   key={r.uid}
                   text={r.string ?? r.uid}
                   //   labelElement={<small>{name}</small>}
-                  onClick={() => {
+                  onClick={(e) => {
+                    if (e.shiftKey) {
+                      window.roamAlphaAPI.ui.rightSidebar.addWindow({
+                        window: {
+                          type: "block",
+                          "block-uid": r.uid,
+                        },
+                      });
+                      return;
+                    }
                     window.roamAlphaAPI.ui.mainWindow.openBlock({
                       block: {
                         uid: r.uid,
